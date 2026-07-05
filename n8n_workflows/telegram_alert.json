@@ -1,0 +1,58 @@
+{
+  "name": "Revenue Guardian - Telegram Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "revenue-guardian/telegram-alert",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-alert-in",
+      "name": "Alert webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const a = $input.first().json.result?.anomalies_found?.[0] || {};\nconst report = $input.first().json.result?.final_report || 'Revenue Guardian check completed.';\nconst lines = [\n  '\\ud83d\\udea8 *Revenue Guardian Alert*',\n  '',\n  report,\n  a.change_percent !== undefined ? `Change: ${a.change_percent}%` : '',\n  a.severity ? `Severity: ${a.severity.toUpperCase()}` : '',\n  a.latest_date ? `Date: ${a.latest_date}` : ''\n].filter(Boolean);\nreturn [{ json: { text: lines.join('\\n') } }];"
+      },
+      "id": "format-message",
+      "name": "Format Telegram message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "={{$json.text}}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "send-telegram",
+      "name": "Send Telegram message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [680, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credential",
+          "name": "Revenue Guardian Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Alert webhook": {
+      "main": [[ { "node": "Format Telegram message", "type": "main", "index": 0 } ]]
+    },
+    "Format Telegram message": {
+      "main": [[ { "node": "Send Telegram message", "type": "main", "index": 0 } ]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "notes": "Configure the 'Revenue Guardian Telegram Bot' credential in n8n using TELEGRAM_BOT_TOKEN from .env. Triggered from daily_trigger.json when an anomaly is found."
+  }
+}

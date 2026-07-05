@@ -1,0 +1,64 @@
+{
+  "name": "Revenue Guardian - Daily Trigger",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 8 * * *" }
+          ]
+        }
+      },
+      "id": "cron-daily-8am",
+      "name": "Every day at 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_BASE_URL || \"http://api:8000\"}}/trigger/daily-monitor",
+        "options": { "timeout": 30000 }
+      },
+      "id": "call-daily-monitor",
+      "name": "Call /trigger/daily-monitor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "anomaly-check",
+              "leftValue": "={{$json.result.anomalies_found.length}}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-anomaly-found",
+      "name": "Anomaly found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Every day at 8am": {
+      "main": [[ { "node": "Call /trigger/daily-monitor", "type": "main", "index": 0 } ]]
+    },
+    "Call /trigger/daily-monitor": {
+      "main": [[ { "node": "Anomaly found?", "type": "main", "index": 0 } ]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "notes": "The 'true' output of 'Anomaly found?' feeds into telegram_alert.json's entry node; workflows are split across files for readability."
+  }
+}

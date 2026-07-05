@@ -1,0 +1,37 @@
+{
+  "$schema": "./app_config.schema.json",
+  "app": {
+    "name": "ARIA Revenue Guardian",
+    "version": "0.2.0"
+  },
+  "anomaly_detection": {
+    "threshold_percent": 10.0,
+    "min_days_required": 3,
+    "high_severity_change_percent": 50.0,
+    "max_confidence": 0.95
+  },
+  "pipeline": {
+    "max_iterations": 8,
+    "query_timeout_seconds": 5
+  },
+  "alerts": {
+    "whatsapp_enabled": true,
+    "min_severity_for_alert": "medium",
+    "min_confidence_for_alert": 0.5
+  },
+  "llm": {
+    "provider": "groq",
+    "model": "llama-3.1-8b-instant",
+    "temperature": 0.2,
+    "max_answer_words": 80
+  },
+  "data_quality": {
+    "allowed_categories": [
+      "Electronics",
+      "Furniture",
+      "Stationery",
+      "Accessories"
+    ],
+    "outlier_std_dev": 3.0
+  }
+}

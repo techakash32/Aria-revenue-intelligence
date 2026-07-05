@@ -1,0 +1,32 @@
+# Core
+sqlalchemy
+pymysql
+mysql-connector-python
+python-dotenv
+pandas
+
+# AI / Agents
+langgraph==0.0.20
+langchain==0.1.0
+langsmith==0.0.87
+groq
+
+# Vector DB
+chromadb==0.4.22
+
+# API
+fastapi
+uvicorn[standard]
+
+# Dashboard
+streamlit
+
+# Charts
+matplotlib
+
+# Safety
+sqlparse
+
+# HTTP
+requests==2.28.1
+httpx

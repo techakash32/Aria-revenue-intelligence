@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Revenue Guardian App Config",
+  "type": "object",
+  "required": ["app", "anomaly_detection", "pipeline", "alerts", "llm"],
+  "properties": {
+    "app": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "anomaly_detection": {
+      "type": "object",
+      "properties": {
+        "threshold_percent": { "type": "number", "minimum": 0 },
+        "min_days_required": { "type": "integer", "minimum": 1 },
+        "high_severity_change_percent": { "type": "number", "minimum": 0 },
+        "max_confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "pipeline": {
+      "type": "object",
+      "properties": {
+        "max_iterations": { "type": "integer", "minimum": 1 },
+        "query_timeout_seconds": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "alerts": {
+      "type": "object",
+      "properties": {
+        "whatsapp_enabled": { "type": "boolean" },
+        "min_severity_for_alert": { "type": "string", "enum": ["low", "medium", "high"] },
+        "min_confidence_for_alert": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "llm": {
+      "type": "object",
+      "properties": {
+        "provider": { "type": "string" },
+        "model": { "type": "string" },
+        "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+        "max_answer_words": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

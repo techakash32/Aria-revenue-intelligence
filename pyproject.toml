@@ -1,0 +1,47 @@
+[project]
+name = "revenue-guardian"
+version = "0.2.0"
+description = "ARIA Revenue Guardian — an autonomous agent that monitors MySQL revenue data, detects anomalies, explains them with an LLM, and alerts on WhatsApp/Telegram."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "streamlit",
+    "python-dotenv",
+    "pandas",
+    "mysql-connector-python",
+    "sqlparse",
+    "httpx",
+    "requests",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# These files call load_dotenv() before importing modules that read env vars
+# at import time (e.g. tools.whatsapp_tool reading WHATSAPP_TOKEN at module
+# scope), so the import intentionally isn't at the top of the file.
+"app.py" = ["E402"]
+"dashboard/app.py" = ["E402"]
+"api/main.py" = ["E402"]
+"scripts/manual_whatsapp_test.py" = ["E402"]
