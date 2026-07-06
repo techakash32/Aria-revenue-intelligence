@@ -4,6 +4,6 @@ ruff>=0.1.0
 
 # Add any other development dependencies your project needs
 # For example:
-# black>=23.0.0
-# mypy>=1.0.0
-# coverage>=7.0.0
+black>=23.0.0
+mypy>=1.0.0
+coverage>=7.0.0
