@@ -2,9 +2,10 @@
 One‑time script to create the `daily_sales` table and seed sample data.
 Run: python data/seed_db.py
 """
+import os
+
 import mysql.connector
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
