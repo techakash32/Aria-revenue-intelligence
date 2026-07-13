@@ -1,0 +1,27 @@
+name: Daily Trigger
+
+on:
+  schedule:
+    # 08:00 IST = 02:30 UTC. For 20:00 IST (8 PM) use: '30 14 * * *'
+    - cron: '30 2 * * *'
+  workflow_dispatch: {}   # lets you click "Run workflow" manually from the Actions tab to test
+
+jobs:
+  trigger-daily-monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call n8n daily-trigger webhook
+        run: |
+          http_code=$(curl -s -o response.json -w "%{http_code}" \
+            -X POST "${{ secrets.N8N_WEBHOOK_URL }}/webhook/revenue-guardian/daily-trigger" \
+            -H "Content-Type: application/json" \
+            -H "X-Trigger-Secret: ${{ secrets.REVENUE_GUARDIAN_WEBHOOK_SECRET }}" \
+            -d '{}')
+
+          echo "HTTP status: $http_code"
+          cat response.json || true
+
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::n8n webhook call failed with status $http_code"
+            exit 1
+          fi

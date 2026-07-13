@@ -3,17 +3,24 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            { "field": "cronExpression", "expression": "0 8 * * *" }
-          ]
+        "httpMethod": "POST",
+        "path": "revenue-guardian/daily-trigger",
+        "responseMode": "onReceived",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "webhook-daily-trigger-in",
+      "name": "Daily trigger webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "revenue_guardian_webhook_secret",
+          "name": "Revenue Guardian Webhook Secret"
         }
       },
-      "id": "cron-daily-8am",
-      "name": "Every day at 8am",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [240, 300]
+      "notes": "Now fired externally (by GitHub Actions cron) instead of n8n's own Schedule Trigger. Set up a Header Auth credential in n8n (e.g. header 'X-Trigger-Secret') and store the matching value as a GitHub Actions secret so this endpoint can't be hit by randoms."
     },
     {
       "parameters": {
@@ -47,18 +54,65 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.N8N_BASE_URL || \"http://n8n:5678\"}}/webhook/revenue-guardian/telegram-alert",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "call-telegram-alert",
+      "name": "Trigger Telegram Alert workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.N8N_BASE_URL || \"http://n8n:5678\"}}/webhook/revenue-guardian/escalation",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "call-escalation-check",
+      "name": "Trigger Escalation workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 340]
+    },
+    {
+      "parameters": {},
+      "id": "no-anomaly-noop",
+      "name": "No anomaly - end",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [900, 460]
     }
   ],
   "connections": {
-    "Every day at 8am": {
+    "Daily trigger webhook": {
       "main": [[ { "node": "Call /trigger/daily-monitor", "type": "main", "index": 0 } ]]
     },
     "Call /trigger/daily-monitor": {
       "main": [[ { "node": "Anomaly found?", "type": "main", "index": 0 } ]]
+    },
+    "Anomaly found?": {
+      "main": [
+        [
+          { "node": "Trigger Telegram Alert workflow", "type": "main", "index": 0 },
+          { "node": "Trigger Escalation workflow", "type": "main", "index": 0 }
+        ],
+        [ { "node": "No anomaly - end", "type": "main", "index": 0 } ]
+      ]
     }
   },
   "settings": { "executionOrder": "v1" },
   "meta": {
-    "notes": "The 'true' output of 'Anomaly found?' feeds into telegram_alert.json's entry node; workflows are split across files for readability."
+    "notes": "Scheduling moved out of n8n entirely: a GitHub Actions cron job (.github/workflows/daily-revenue-trigger.yml) calls this workflow's webhook once a day. n8n itself only reacts. The IF node's true branch calls both telegram_alert.json and escalation.json's webhooks directly; escalation.json's own IF node decides whether on-call notification is actually warranted, so it's safe to call unconditionally."
   }
 }
