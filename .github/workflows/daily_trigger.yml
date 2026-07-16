@@ -10,10 +10,28 @@ jobs:
   trigger-daily-monitor:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate required secrets are set
+        run: |
+          missing=0
+          if [ -z "${{ secrets.N8N_WEBHOOK_URL }}" ]; then
+            echo "::error::Secret N8N_WEBHOOK_URL is missing or empty. Add it under Settings > Secrets and variables > Actions."
+            missing=1
+          fi
+          if [ -z "${{ secrets.REVENUE_GUARDIAN_WEBHOOK_SECRET }}" ]; then
+            echo "::error::Secret REVENUE_GUARDIAN_WEBHOOK_SECRET is missing or empty. Add it under Settings > Secrets and variables > Actions."
+            missing=1
+          fi
+          if [ "$missing" -eq 1 ]; then
+            exit 1
+          fi
+
       - name: Call n8n daily-trigger webhook
         run: |
+          url="${{ secrets.N8N_WEBHOOK_URL }}/webhook/revenue-guardian/daily-trigger"
+          echo "Calling: $url"
+
           http_code=$(curl -s -o response.json -w "%{http_code}" \
-            -X POST "${{ secrets.N8N_WEBHOOK_URL }}/webhook/revenue-guardian/daily-trigger" \
+            -X POST "$url" \
             -H "Content-Type: application/json" \
             -H "X-Trigger-Secret: ${{ secrets.REVENUE_GUARDIAN_WEBHOOK_SECRET }}" \
             -d '{}')
