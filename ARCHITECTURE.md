@@ -14,7 +14,7 @@ Streamlit dashboard.
 ```mermaid
 flowchart LR
     subgraph Trigger
-        A[n8n cron] -->|POST /trigger/daily-monitor| API
+        A[GitHub Actions cron] -->|POST /trigger/daily-monitor| API
         B[Streamlit "Run Monitor"] --> API
         C[Chat message] --> API
     end
@@ -79,7 +79,6 @@ flowchart LR
 | `memory/` | Short-term rolling chat buffer, semantic (Chroma) recall, static recovery heuristics |
 | `api/` | FastAPI app: health, chat, trigger routes |
 | `dashboard/` | Streamlit UI: KPIs, chat, decision log |
-| `n8n_workflows/` | Cron trigger, Telegram alert, high-severity escalation workflows |
 | `config/` | Versioned app settings + JSON schema |
 | `data/` | Sample CSV + DB seeding script |
 | `tests/` | Unit tests (mocked, no live DB required) |

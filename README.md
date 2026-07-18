@@ -15,7 +15,7 @@ WhatsApp — with every decision logged for audit.
 Most "anomaly detection" demos stop at a Jupyter notebook. Revenue Guardian
 is wired end-to-end: a real orchestration pipeline, SQL-injection-safe data
 access, confidence-gated alerting, a decision audit log, a dashboard, an API,
-and n8n workflows for scheduling/escalation — the shape of an actual
+and a scheduled trigger for daily monitoring — the shape of an actual
 production revenue-ops tool, at MVP scale.
 
 ## Features
@@ -35,8 +35,8 @@ production revenue-ops tool, at MVP scale.
 - **Dashboard** (Streamlit) — live KPIs, revenue trend chart, chat interface,
   decision log viewer. Falls back to bundled sample data if MySQL is down.
 - **API** (FastAPI) — `/health`, `/chat`, `/trigger/daily-monitor`.
-- **n8n workflows** — daily cron trigger, Telegram alerting, high-severity
-  escalation safety net.
+- **Scheduled trigger** — GitHub Actions cron calls `/trigger/daily-monitor`
+  directly (`.github/workflows/daily_trigger.yml`), no extra service to host.
 - **Dockerized** — `docker compose up --build` runs MySQL, Chroma, API, and
   dashboard together, with healthchecks.
 
@@ -53,8 +53,8 @@ design rationale.
 | Vector memory | Chroma |
 | API | FastAPI + Uvicorn |
 | Dashboard | Streamlit |
-| Alerting | WhatsApp Cloud API (Meta), Telegram (via n8n) |
-| Automation | n8n workflows |
+| Alerting | WhatsApp Cloud API (Meta) |
+| Automation | GitHub Actions cron (`daily_trigger.yml`) |
 | Testing | pytest, pytest-asyncio |
 | Quality | Ruff, GitHub Actions CI |
 | Packaging | Docker, docker-compose |
@@ -72,7 +72,6 @@ revenue-guardian/
 ├── memory/          # short-term buffer, semantic (Chroma) store, heuristics
 ├── api/             # FastAPI app + routes
 ├── dashboard/        # Streamlit app + components
-├── n8n_workflows/    # daily trigger, Telegram alert, escalation
 ├── config/          # app_config.json + JSON schema
 ├── data/            # sample CSV + DB seed script
 ├── tests/           # pytest suite (mocked, no live DB required)
@@ -151,8 +150,8 @@ ruff check .      # lint
 pytest -v         # unit tests — mocked, no live MySQL/WhatsApp required
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint, JSON validation for the n8n
-workflows and app config, and the full test suite on every push/PR.
+CI (`.github/workflows/ci.yml`) runs lint, JSON validation for the app
+config, and the full test suite on every push/PR.
 
 ## Security notes
 
