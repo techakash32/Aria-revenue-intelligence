@@ -12,6 +12,8 @@ from tools.llm_tool import answer_business_question
 def render_chat_interface() -> None:
     if "chat_messages" not in st.session_state:
         st.session_state.chat_messages = []
+    if "last_monitor_result" not in st.session_state:
+        st.session_state.last_monitor_result = None
 
     st.subheader("Ask ARIA")
     for message in st.session_state.chat_messages:
@@ -30,13 +32,43 @@ def render_chat_interface() -> None:
         with st.spinner("Thinking..."):
             if should_run_monitor(prompt):
                 result = run_async(run_monitor(query=prompt))
+                st.session_state.last_monitor_result = result  # cache for follow-ups
                 reply = result.get("final_report") or "Monitor completed."
                 render_monitor_result(result)
             else:
-                reply = run_async(answer_business_question(prompt))
-            st.write(reply)
+                # FIX: pass last monitor result as context so ARIA can answer
+                # follow-up questions ("why is anomaly -48.76%?") instead of
+                # calling the LLM with an empty context every time.
+                context = build_chat_context(st.session_state.last_monitor_result)
+                reply = run_async(answer_business_question(prompt, context))
+        st.write(reply)
 
     st.session_state.chat_messages.append({"role": "assistant", "content": reply})
+
+
+def build_chat_context(result: dict | None) -> dict:
+    """Turn the last monitor run into a compact context dict for the LLM."""
+    if not result:
+        return {}
+
+    raw_data = result.get("raw_data") or {}
+    summary = raw_data.get("summary") or {}
+    anomalies = result.get("anomalies_found") or []
+    anomaly = anomalies[0] if anomalies else {}
+
+    return {
+        "latest_revenue": summary.get("latest_revenue"),
+        "baseline_revenue": summary.get("baseline_revenue"),
+        "change_percent": summary.get("change_percent"),
+        "latest_date": summary.get("latest_date"),
+        "days_analyzed": summary.get("days_analyzed"),
+        "anomaly_type": anomaly.get("type"),
+        "anomaly_severity": anomaly.get("severity"),
+        "anomaly_reason": anomaly.get("reason"),
+        "anomaly_confidence": anomaly.get("confidence"),
+        "data_quality_issues": result.get("data_quality_issues", []),
+        "action_taken": result.get("action_taken"),
+    }
 
 
 def render_monitor_button() -> None:
@@ -50,6 +82,7 @@ def render_monitor_button() -> None:
     if run_clicked:
         with st.spinner("Running revenue monitor..."):
             result = run_async(run_monitor())
+        st.session_state.last_monitor_result = result  # cache for follow-ups
         if result.get("error"):
             st.error(result.get("final_report") or result["error"])
         else:
@@ -91,8 +124,12 @@ def render_monitor_result(result: dict) -> None:
 
 def should_run_monitor(message: str) -> bool:
     lowered = message.lower()
-    keywords = ("revenue", "sales", "anomaly", "drop", "spike", "monitor")
-    return any(keyword in lowered for keyword in keywords)
+    # FIX: only re-run the full SQL monitor pipeline on an explicit action
+    # word. Topic words alone ("revenue", "drop", "anomaly") used to
+    # re-trigger a fresh run even for follow-up questions like "what's the
+    # baseline revenue?" — those should answer from cached context instead.
+    action_words = ("run", "check", "trigger", "refresh", "recheck", "rerun", "re-run")
+    return any(word in lowered for word in action_words)
 
 
 def run_async(coro):
